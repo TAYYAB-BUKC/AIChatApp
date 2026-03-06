@@ -4,11 +4,13 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <UserSecretsId>7011ad22-58b5-4c2c-bb72-9af807c6e6aa</UserSecretsId>
+    <UserSecretsId>fe1cb802-690f-459b-ba57-7041d044328b</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GroqApiLibrary" Version="2.0.0" />
     <PackageReference Include="Markdig" Version="0.41.3" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
   </ItemGroup>
 
   <ItemGroup>
