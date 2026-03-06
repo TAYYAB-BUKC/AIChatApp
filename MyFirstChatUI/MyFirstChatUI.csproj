@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="GroqApiLibrary" Version="2.0.0" />
     <PackageReference Include="Markdig" Version="0.41.3" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="10.3.0" />
   </ItemGroup>
 
   <ItemGroup>
