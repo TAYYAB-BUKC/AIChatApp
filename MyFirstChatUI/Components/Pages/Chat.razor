@@ -1,5 +1,8 @@
 ﻿@page "/"
 @page "/chat"
+@using GroqApiLibrary
+@using System.Text.Json.Nodes
+@inject IConfiguration configuration
 
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
@@ -11,10 +14,27 @@
 @code {
 
     bool isLoading = false;
+    private string apiKey = string.Empty;
+    private GroqApiClient chatClient = null!;
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
         // Logic to handle the sent message
+        apiKey = configuration["Chat:AI:ApiKey"] ?? throw new InvalidOperationException("Missing configuration: Endpoint. See the README for details");
+        chatClient = new GroqApiClient(apiKey!);
+
+        var initialRequest = new JsonObject
+        {
+            ["model"] = GroqModels.KimiK2,
+            ["messages"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["role"] = "system",
+                    ["content"] = "You are an AI assistant that tries to answer the user's query."
+                }
+            }
+        };
         isLoading = false;
     }
 
