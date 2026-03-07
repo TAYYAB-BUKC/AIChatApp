@@ -6,16 +6,20 @@
 
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
+    <AssistantMessage>
+        <MarkdownText Text="@response?.ToString()"></MarkdownText>
+    </AssistantMessage>
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
 <ChatInput OnSendMessage="HandleSendMessage" 
-    IsLoading="@isLoading" />
+IsLoading="@isLoading" />
 
 @code {
 
     bool isLoading = false;
     private string apiKey = string.Empty;
     private GroqApiClient chatClient = null!;
+    private JsonObject? response = null!;
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
@@ -35,6 +39,8 @@
                 }
             }
         };
+
+        response = await chatClient.CreateChatCompletionAsync(initialRequest);
         isLoading = false;
     }
 
