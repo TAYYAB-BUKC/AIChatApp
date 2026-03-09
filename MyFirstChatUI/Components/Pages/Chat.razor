@@ -12,7 +12,7 @@
     </AssistantMessage>
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
-<ChatInput OnSendMessage="HandleSendMessage" 
+<ChatInput OnSendMessage="HandleSendMessage"
 IsLoading="@isLoading" />
 
 @code {
@@ -21,6 +21,8 @@ IsLoading="@isLoading" />
     private string apiKey = string.Empty;
     private GroqApiClient chatClient = null!;
     private string responseMessage = string.Empty;
+    private JsonArray history = [];
+
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
@@ -28,22 +30,29 @@ IsLoading="@isLoading" />
         apiKey = configuration["Chat:AI:ApiKey"] ?? throw new InvalidOperationException("Missing configuration: Endpoint. See the README for details");
         chatClient = new GroqApiClient(apiKey!);
 
-        var initialRequest = new JsonObject
+        history = new JsonArray
         {
-            ["model"] = GroqModels.KimiK2,
-            ["messages"] = new JsonArray
+            new JsonObject
             {
-                new JsonObject
-                {
-                    ["role"] = "system",
-                    ["content"] = "You are an AI assistant that tries to answer the user's query."
-                }
+                ["role"] = "system",
+                ["content"] = "You are an AI assistant that tries to answer the user's query."
             }
         };
 
-        JsonObject? response = await chatClient.CreateChatCompletionAsync(initialRequest);
+        var request = new JsonObject
+        {
+            ["model"] = GroqModels.KimiK2,
+            ["messages"] = history
+        };
+
+        JsonObject? response = await chatClient.CreateChatCompletionAsync(request);
         var message = GroqResponseHelper.GetMessage(Convert.ToString(response));
         responseMessage = message.Content;
+        history.Add(new JsonObject
+        {
+            ["role"] = message.Role,
+            ["content"] = message.Content
+        });
         isLoading = false;
     }
 
