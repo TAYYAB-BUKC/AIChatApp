@@ -2,12 +2,13 @@
 @page "/chat"
 @using GroqApiLibrary
 @using System.Text.Json.Nodes
+@using MyFirstChatUI.Helpers.Groq
 @inject IConfiguration configuration
 
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
     <AssistantMessage>
-        <MarkdownText Text="@response?.ToString()"></MarkdownText>
+        <MarkdownText Text="@responseMessage"></MarkdownText>
     </AssistantMessage>
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
@@ -19,7 +20,7 @@ IsLoading="@isLoading" />
     bool isLoading = false;
     private string apiKey = string.Empty;
     private GroqApiClient chatClient = null!;
-    private JsonObject? response = null!;
+    private string responseMessage = string.Empty;
     protected override async Task OnInitializedAsync()
     {
         isLoading = true;
@@ -40,7 +41,9 @@ IsLoading="@isLoading" />
             }
         };
 
-        response = await chatClient.CreateChatCompletionAsync(initialRequest);
+        JsonObject? response = await chatClient.CreateChatCompletionAsync(initialRequest);
+        var message = GroqResponseHelper.GetMessage(Convert.ToString(response));
+        responseMessage = message.Content;
         isLoading = false;
     }
 
