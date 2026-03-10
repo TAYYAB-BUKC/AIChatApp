@@ -5,6 +5,7 @@
 @using Microsoft.Extensions.AI
 @using MyFirstChatUI.Helpers.Groq
 @inject IConfiguration configuration
+@inject IWebHostEnvironment environment
 
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
@@ -33,7 +34,7 @@
     }
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
-<ChatInput OnSendMessage="HandleSendMessage"
+<ChatInput OnSendMessage="HandleSendMessage" OnFileAttachment="GetFileData"
            IsLoading="@isLoading" />
 
 @code {
@@ -106,7 +107,7 @@
         isLoading = false;
     }
 
-    @* private void HandleSendImage(byte[] imageBytes, string mediaType)
+    private void HandleSendImage(byte[] imageBytes, string mediaType)
     {
 
     }
@@ -126,7 +127,22 @@
         await fileContent.CopyToAsync(ms);
         imgBytes = ms.ToArray();
 
-        HandleSendImage(imgBytes, file.ContentType);
+        var trustedFileName = $"{Guid.NewGuid().ToString("N").Substring(0, 10)}_{file.Name}";
+        var uploadDirectory = Path.Combine(environment.WebRootPath, "temp");
+
+        if(!Directory.Exists(uploadDirectory))
+            Directory.CreateDirectory(uploadDirectory);
+
+        var filePath = Path.Combine(uploadDirectory, trustedFileName);
+
+        // Save the file to the server using a FileStream
+        await using FileStream fs = new(filePath, FileMode.Create);
+        await file.OpenReadStream().CopyToAsync(fs);
+
+        ms.Close();
+        fs.Close();
+
+        await HandleSendImage(filePath);
         isLoading = false;
-    } *@
+    }
 }
