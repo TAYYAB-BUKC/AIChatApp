@@ -10,7 +10,7 @@
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
     @{
-        var messages = history.Cast<JsonObject>().Select(msg => new
+        var messages = customHistory.Cast<JsonObject>().Select(msg => new
         {
             Role = Convert.ToString(msg["role"]),
             Content = Convert.ToString(msg["content"]),
@@ -55,7 +55,8 @@ IsLoading="@isLoading" />
     private string apiKey = string.Empty;
     private GroqApiClient chatClient = null!;
     private string responseMessage = string.Empty;
-    private JsonArray history = [];
+    private JsonArray chatHistory = [];
+    private JsonArray customHistory = [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -64,7 +65,7 @@ IsLoading="@isLoading" />
         apiKey = configuration["Chat:AI:ApiKey"] ?? throw new InvalidOperationException("Missing configuration: Endpoint. See the README for details");
         chatClient = new GroqApiClient(apiKey!);
 
-        history = new JsonArray
+        chatHistory = new JsonArray
         {
             new JsonObject
             {
@@ -76,13 +77,19 @@ IsLoading="@isLoading" />
         var request = new JsonObject
         {
             ["model"] = GroqModels.Llama4Scout,
-            ["messages"] = history
+            ["messages"] = chatHistory
         };
 
         JsonObject? response = await chatClient.CreateChatCompletionAsync(request);
         var message = GroqResponseHelper.GetMessage(Convert.ToString(response));
         responseMessage = message.Content;
-        history.Add(new JsonObject
+        chatHistory.Add(new JsonObject
+        {
+            ["role"] = message.Role,
+            ["content"] = message.Content
+        });
+
+        customHistory.Add(new JsonObject
         {
             ["role"] = message.Role,
             ["content"] = message.Content,
@@ -97,30 +104,42 @@ IsLoading="@isLoading" />
         // Logic to handle the sent message
         try{
 
-            history.Add(new JsonObject
-                {
-                    ["role"] = Convert.ToString(ChatRole.User),
-                    ["content"] = message,
-                    ["type"] = "Text"
-                });
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                ["content"] = message
+            });
+
+            customHistory.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                ["content"] = message,
+                ["type"] = "Text"
+            });
 
             var userRequest = new JsonObject
-                {
-                    ["model"] = GroqModels.Llama4Scout,
-                    ["messages"] = RequestHelper.DeepCloneMessages(history)
-                };
+            {
+                ["model"] = GroqModels.Llama4Scout,
+                ["messages"] = RequestHelper.DeepCloneMessages(chatHistory)
+            };
 
             JsonObject? userResponse = await chatClient.CreateVisionCompletionAsync(userRequest);
             var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
 
-            history.Add(new JsonObject
-                {
-                    ["role"] = response.Role,
-                    ["content"] = response.Content,
-                    ["type"] = "Text"
-                });
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+            });
+
+            customHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+                ["type"] = "Text"
+            });
         }catch(Exception e){
-            int a0 = 0;
+            
         }
         isLoading = false;
     }
@@ -133,12 +152,18 @@ IsLoading="@isLoading" />
     private async Task HandleSendImage(string filePath)
     {
         try{
-            history.Add(new JsonObject
+            chatHistory.Add(new JsonObject
             {
                 ["role"] = Convert.ToString(ChatRole.User),
-                ["content"] = "I will ask questions about this image.",
-                ["type"] = "Image",
-                ["filePath"] = $"temp\\{Path.GetFileName(filePath)}"
+                ["content"] = "I will ask questions about this image."
+            });
+
+            customHistory.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                    ["content"] = "I will ask questions about this image.",
+                    ["type"] = "Image",
+                    ["filePath"] = $"temp\\{Path.GetFileName(filePath)}"
             });
 
             var userResponse = await chatClient.CreateVisionCompletionWithBase64ImageAsync(
@@ -151,7 +176,13 @@ IsLoading="@isLoading" />
 
             var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
 
-            history.Add(new JsonObject
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content
+            });
+
+            customHistory.Add(new JsonObject
             {
                 ["role"] = response.Role,
                 ["content"] = response.Content,
