@@ -35,7 +35,7 @@
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
 <ChatInput OnSendMessage="HandleSendMessage" OnFileAttachment="GetFileData"
-           IsLoading="@isLoading" />
+IsLoading="@isLoading" />
 
 @code {
 
@@ -63,11 +63,11 @@
 
         var request = new JsonObject
         {
-            ["model"] = GroqModels.KimiK2,
+            ["model"] = GroqModels.Llama4Scout,
             ["messages"] = history
         };
 
-        JsonObject? response = await chatClient.CreateChatCompletionAsync(request);
+        JsonObject? response = await chatClient.CreateVisionCompletionAsync(request);
         var message = GroqResponseHelper.GetMessage(Convert.ToString(response));
         responseMessage = message.Content;
         history.Add(new JsonObject
@@ -91,7 +91,7 @@
 
         var userRequest = new JsonObject
         {
-            ["model"] = GroqModels.KimiK2,
+            ["model"] = GroqModels.Llama4Scout,
             ["messages"] = RequestHelper.DeepCloneMessages(history)
         };
 
@@ -110,6 +110,21 @@
     private void HandleSendImage(byte[] imageBytes, string mediaType)
     {
 
+    }
+
+    private async Task HandleSendImage(string filePath)
+    {
+        try{
+            var localResult = await chatClient.CreateVisionCompletionWithBase64ImageAsync(
+                imagePath: filePath,
+                //prompt: "I will ask questions about this picture in future.",
+                prompt: "I will ask questions about this image.",
+                //prompt: "",
+                model: GroqModels.Llama4Scout
+            );
+        } catch(Exception){
+            throw;
+        }
     }
 
     private async Task GetFileData(InputFileChangeEventArgs e)
