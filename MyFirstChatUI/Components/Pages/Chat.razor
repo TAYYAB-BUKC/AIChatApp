@@ -2,6 +2,7 @@
 @page "/chat"
 @using GroqApiLibrary
 @using System.Text.Json.Nodes
+@using Microsoft.Extensions.AI
 @using MyFirstChatUI.Helpers.Groq
 @inject IConfiguration configuration
 
@@ -60,6 +61,28 @@ IsLoading="@isLoading" />
     {
         isLoading = true;
         // Logic to handle the sent message
+
+        history.Add(new JsonObject
+        {
+            ["role"] = Convert.ToString(ChatRole.User),
+            ["content"] = message
+        });
+
+        var userRequest = new JsonObject
+        {
+            ["model"] = GroqModels.KimiK2,
+            ["messages"] = RequestHelper.DeepCloneMessages(history)
+        };
+
+        JsonObject? userResponse = await chatClient.CreateChatCompletionAsync(userRequest);
+        var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
+
+        history.Add(new JsonObject
+        {
+            ["role"] = response.Role,
+            ["content"] = response.Content
+        });
+
         isLoading = false;
     }
 
