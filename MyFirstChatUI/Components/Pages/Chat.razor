@@ -8,13 +8,33 @@
 
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
-    <AssistantMessage>
-        <MarkdownText Text="@responseMessage"></MarkdownText>
-    </AssistantMessage>
+    @{
+        var messages = history.Cast<JsonObject>().Select(msg => new
+        {
+            Role = Convert.ToString(msg["role"]),
+            Content = Convert.ToString(msg["content"])
+        }).ToList();
+
+        foreach (var message in messages)
+        {
+            if (message.Role == ChatRole.Assistant.ToString())
+            {
+                <AssistantMessage>
+                    <MarkdownText Text="@message.Content"></MarkdownText>
+                </AssistantMessage>
+            }
+            else if (message.Role == ChatRole.User.ToString())
+            {
+                <UserMessage>
+                    <MarkdownText Text="@message.Content"></MarkdownText>
+                </UserMessage>
+            }
+        }
+    }
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
 <ChatInput OnSendMessage="HandleSendMessage"
-IsLoading="@isLoading" />
+           IsLoading="@isLoading" />
 
 @code {
 
