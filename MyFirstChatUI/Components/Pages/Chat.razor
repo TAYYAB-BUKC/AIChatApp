@@ -13,7 +13,9 @@
         var messages = history.Cast<JsonObject>().Select(msg => new
         {
             Role = Convert.ToString(msg["role"]),
-            Content = Convert.ToString(msg["content"])
+            Content = Convert.ToString(msg["content"]),
+            Type = Convert.ToString(msg["type"]),
+            FilePath = Convert.ToString(msg["filePath"])
         }).ToList();
 
         foreach (var message in messages)
@@ -26,9 +28,19 @@
             }
             else if (message.Role == ChatRole.User.ToString())
             {
-                <UserMessage>
-                    <MarkdownText Text="@message.Content"></MarkdownText>
-                </UserMessage>
+                if(message.Type == "Text"){
+                    <UserMessage>
+                        <MarkdownText Text="@message.Content"></MarkdownText>
+                    </UserMessage>
+                }
+
+                if (message.Type == "Image")
+                {
+                    <UserMessage>
+                        <img src="@message.FilePath" alt="User uploaded image" style="max-width: 200px; max-height: 200px;" />
+                        <MarkdownText Text="@message.Content"></MarkdownText>
+                    </UserMessage>
+                }
             }
         }
     }
@@ -67,13 +79,14 @@ IsLoading="@isLoading" />
             ["messages"] = history
         };
 
-        JsonObject? response = await chatClient.CreateVisionCompletionAsync(request);
+        JsonObject? response = await chatClient.CreateChatCompletionAsync(request);
         var message = GroqResponseHelper.GetMessage(Convert.ToString(response));
         responseMessage = message.Content;
         history.Add(new JsonObject
         {
             ["role"] = message.Role,
-            ["content"] = message.Content
+            ["content"] = message.Content,
+            ["type"] = "Text"
         });
         isLoading = false;
     }
@@ -82,28 +95,33 @@ IsLoading="@isLoading" />
     {
         isLoading = true;
         // Logic to handle the sent message
+        try{
 
-        history.Add(new JsonObject
-        {
-            ["role"] = Convert.ToString(ChatRole.User),
-            ["content"] = message
-        });
+            history.Add(new JsonObject
+                {
+                    ["role"] = Convert.ToString(ChatRole.User),
+                    ["content"] = message,
+                    ["type"] = "Text"
+                });
 
-        var userRequest = new JsonObject
-        {
-            ["model"] = GroqModels.Llama4Scout,
-            ["messages"] = RequestHelper.DeepCloneMessages(history)
-        };
+            var userRequest = new JsonObject
+                {
+                    ["model"] = GroqModels.Llama4Scout,
+                    ["messages"] = RequestHelper.DeepCloneMessages(history)
+                };
 
-        JsonObject? userResponse = await chatClient.CreateChatCompletionAsync(userRequest);
-        var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
+            JsonObject? userResponse = await chatClient.CreateVisionCompletionAsync(userRequest);
+            var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
 
-        history.Add(new JsonObject
-        {
-            ["role"] = response.Role,
-            ["content"] = response.Content
-        });
-
+            history.Add(new JsonObject
+                {
+                    ["role"] = response.Role,
+                    ["content"] = response.Content,
+                    ["type"] = "Text"
+                });
+        }catch(Exception e){
+            int a0 = 0;
+        }
         isLoading = false;
     }
 
@@ -115,13 +133,30 @@ IsLoading="@isLoading" />
     private async Task HandleSendImage(string filePath)
     {
         try{
-            var localResult = await chatClient.CreateVisionCompletionWithBase64ImageAsync(
+            history.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                ["content"] = "I will ask questions about this image.",
+                ["type"] = "Image",
+                ["filePath"] = $"temp\\{Path.GetFileName(filePath)}"
+            });
+
+            var userResponse = await chatClient.CreateVisionCompletionWithBase64ImageAsync(
                 imagePath: filePath,
                 //prompt: "I will ask questions about this picture in future.",
                 prompt: "I will ask questions about this image.",
                 //prompt: "",
                 model: GroqModels.Llama4Scout
             );
+
+            var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
+
+            history.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+                ["type"] = "Text"
+            });
         } catch(Exception){
             throw;
         }
