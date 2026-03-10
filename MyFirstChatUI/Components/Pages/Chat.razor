@@ -5,6 +5,7 @@
 @using Microsoft.Extensions.AI
 @using MyFirstChatUI.Helpers.Groq
 @inject IConfiguration configuration
+@inject IWebHostEnvironment environment
 
 <PageTitle>Home</PageTitle>
 <ChatMessageWrapper>
@@ -12,7 +13,9 @@
         var messages = history.Cast<JsonObject>().Select(msg => new
         {
             Role = Convert.ToString(msg["role"]),
-            Content = Convert.ToString(msg["content"])
+            Content = Convert.ToString(msg["content"]),
+            Type = Convert.ToString(msg["type"]),
+            FilePath = Convert.ToString(msg["filePath"])
         }).ToList();
 
         foreach (var message in messages)
@@ -25,16 +28,26 @@
             }
             else if (message.Role == ChatRole.User.ToString())
             {
-                <UserMessage>
-                    <MarkdownText Text="@message.Content"></MarkdownText>
-                </UserMessage>
+                if(message.Type == "Text"){
+                    <UserMessage>
+                        <MarkdownText Text="@message.Content"></MarkdownText>
+                    </UserMessage>
+                }
+
+                if (message.Type == "Image")
+                {
+                    <UserMessage>
+                        <img src="@message.FilePath" alt="User uploaded image" style="max-width: 200px; max-height: 200px;" />
+                        <MarkdownText Text="@message.Content"></MarkdownText>
+                    </UserMessage>
+                }
             }
         }
     }
     <LoadingIndicator IsLoading="@isLoading" StreamingText="" />
 </ChatMessageWrapper>
-<ChatInput OnSendMessage="HandleSendMessage"
-           IsLoading="@isLoading" />
+<ChatInput OnSendMessage="HandleSendMessage" OnFileAttachment="GetFileData"
+IsLoading="@isLoading" />
 
 @code {
 
@@ -62,7 +75,7 @@
 
         var request = new JsonObject
         {
-            ["model"] = GroqModels.KimiK2,
+            ["model"] = GroqModels.Llama4Scout,
             ["messages"] = history
         };
 
@@ -72,7 +85,8 @@
         history.Add(new JsonObject
         {
             ["role"] = message.Role,
-            ["content"] = message.Content
+            ["content"] = message.Content,
+            ["type"] = "Text"
         });
         isLoading = false;
     }
@@ -81,34 +95,71 @@
     {
         isLoading = true;
         // Logic to handle the sent message
+        try{
 
-        history.Add(new JsonObject
-        {
-            ["role"] = Convert.ToString(ChatRole.User),
-            ["content"] = message
-        });
+            history.Add(new JsonObject
+                {
+                    ["role"] = Convert.ToString(ChatRole.User),
+                    ["content"] = message,
+                    ["type"] = "Text"
+                });
 
-        var userRequest = new JsonObject
-        {
-            ["model"] = GroqModels.KimiK2,
-            ["messages"] = RequestHelper.DeepCloneMessages(history)
-        };
+            var userRequest = new JsonObject
+                {
+                    ["model"] = GroqModels.Llama4Scout,
+                    ["messages"] = RequestHelper.DeepCloneMessages(history)
+                };
 
-        JsonObject? userResponse = await chatClient.CreateChatCompletionAsync(userRequest);
-        var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
+            JsonObject? userResponse = await chatClient.CreateVisionCompletionAsync(userRequest);
+            var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
 
-        history.Add(new JsonObject
-        {
-            ["role"] = response.Role,
-            ["content"] = response.Content
-        });
-
+            history.Add(new JsonObject
+                {
+                    ["role"] = response.Role,
+                    ["content"] = response.Content,
+                    ["type"] = "Text"
+                });
+        }catch(Exception e){
+            int a0 = 0;
+        }
         isLoading = false;
     }
 
-    @* private void HandleSendImage(byte[] imageBytes, string mediaType)
+    private void HandleSendImage(byte[] imageBytes, string mediaType)
     {
 
+    }
+
+    private async Task HandleSendImage(string filePath)
+    {
+        try{
+            history.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                ["content"] = "I will ask questions about this image.",
+                ["type"] = "Image",
+                ["filePath"] = $"temp\\{Path.GetFileName(filePath)}"
+            });
+
+            var userResponse = await chatClient.CreateVisionCompletionWithBase64ImageAsync(
+                imagePath: filePath,
+                //prompt: "I will ask questions about this picture in future.",
+                prompt: "I will ask questions about this image.",
+                //prompt: "",
+                model: GroqModels.Llama4Scout
+            );
+
+            var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
+
+            history.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+                ["type"] = "Text"
+            });
+        } catch(Exception){
+            throw;
+        }
     }
 
     private async Task GetFileData(InputFileChangeEventArgs e)
@@ -126,7 +177,22 @@
         await fileContent.CopyToAsync(ms);
         imgBytes = ms.ToArray();
 
-        HandleSendImage(imgBytes, file.ContentType);
+        var trustedFileName = $"{Guid.NewGuid().ToString("N").Substring(0, 10)}_{file.Name}";
+        var uploadDirectory = Path.Combine(environment.WebRootPath, "temp");
+
+        if(!Directory.Exists(uploadDirectory))
+            Directory.CreateDirectory(uploadDirectory);
+
+        var filePath = Path.Combine(uploadDirectory, trustedFileName);
+
+        // Save the file to the server using a FileStream
+        await using FileStream fs = new(filePath, FileMode.Create);
+        await file.OpenReadStream().CopyToAsync(fs);
+
+        ms.Close();
+        fs.Close();
+
+        await HandleSendImage(filePath);
         isLoading = false;
-    } *@
+    }
 }
