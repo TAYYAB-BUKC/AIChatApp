@@ -25,7 +25,6 @@
     private List<CardData> Cards = [];
     private string apiKey = string.Empty;
     private GroqApiClient chatClient = null!;
-    private JsonArray chatHistory = [];
 
     private async Task LoadData()
     {
@@ -33,23 +32,22 @@
         apiKey = configuration["Chat:AI:ApiKey"] ?? throw new InvalidOperationException("Missing configuration: Endpoint. See the README for details");
         chatClient = new GroqApiClient(apiKey!);
 
-        chatHistory = new JsonArray
-        {
-            new JsonObject
-            {
-                ["role"] = "system",
-                ["content"] = agentPrompt
-            }
-        };
-
         var markdownContents = CoffeeDataService.GetMarkdownFileNames();
         foreach (var content in markdownContents)
         {
-            chatHistory.Add(new JsonObject
+            var message = new JsonArray
             {
-                ["role"] = ChatRole.User.ToString(),
-                ["content"] = content,
-            });
+                new JsonObject
+                {
+                    ["role"] = "system",
+                    ["content"] = agentPrompt
+                },
+                new JsonObject
+                {
+                    ["role"] = ChatRole.User.ToString(),
+                    ["content"] = content,
+                }
+            };
 
             var schema = new JsonObject
             {
@@ -69,7 +67,7 @@
             };
 
             var request = await chatClient.CreateChatCompletionWithStructuredOutputAsync(
-                RequestHelper.DeepCloneMessages(chatHistory),
+                message,
                 GroqModels.GptOss20B,  // Supports strict: true
                 schema,
                 schemaName: "Coffee_Cards",
