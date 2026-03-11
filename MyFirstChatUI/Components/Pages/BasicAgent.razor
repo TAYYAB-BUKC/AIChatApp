@@ -5,6 +5,7 @@
 @using MyFirstChatUI.Helpers.Groq
 @using MyFirstChatUI.Models
 @using System.Text.Json.Nodes
+@using System.Text.Json
 @inject CoffeeData CoffeeDataService
 @inject IConfiguration configuration
 
@@ -66,10 +67,19 @@
                 ["required"] = new JsonArray { "Title", "Tags", "Description" },
                 ["additionalProperties"] = false
             };
-        }
 
-        StateHasChanged();
-        
+            var request = await chatClient.CreateChatCompletionWithStructuredOutputAsync(
+                RequestHelper.DeepCloneMessages(chatHistory),
+                GroqModels.GptOss20B,  // Supports strict: true
+                schema,
+                schemaName: "Coffee_Cards",
+                strict: true
+            );
+            var response = GroqResponseHelper.GetMessage(Convert.ToString(request));
+            Cards.Add(JsonSerializer.Deserialize<CardData>(response.Content));
+            StateHasChanged();
+            await Task.Delay(5);
+        }
         isLoading = false;
     }
 }
