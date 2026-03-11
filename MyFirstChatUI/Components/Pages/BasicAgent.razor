@@ -1,6 +1,8 @@
 ﻿@page "/agent"
 @using GroqApiLibrary
+@using Microsoft.Extensions.AI
 @using MyFirstChatUI.Components.Listing
+@using MyFirstChatUI.Helpers.Groq
 @using MyFirstChatUI.Models
 @using System.Text.Json.Nodes
 @inject CoffeeData CoffeeDataService
@@ -38,6 +40,34 @@
                 ["content"] = agentPrompt
             }
         };
+
+        var markdownContents = CoffeeDataService.GetMarkdownFileNames();
+        foreach (var content in markdownContents)
+        {
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = ChatRole.User.ToString(),
+                ["content"] = content,
+            });
+
+            var schema = new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["Title"] = new JsonObject { ["type"] = "string" },
+                    ["Description"] = new JsonObject { ["type"] = "string" },
+                    ["Tags"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["items"] = new JsonObject { ["type"] = "string" }
+                    }
+                },
+                ["required"] = new JsonArray { "Title", "Tags", "Description" },
+                ["additionalProperties"] = false
+            };
+        }
+
         StateHasChanged();
         
         isLoading = false;
