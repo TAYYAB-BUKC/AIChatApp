@@ -1,7 +1,10 @@
 ﻿@page "/agent"
+@using GroqApiLibrary
 @using MyFirstChatUI.Components.Listing
 @using MyFirstChatUI.Models
+@using System.Text.Json.Nodes
 @inject CoffeeData CoffeeDataService
+@inject IConfiguration configuration
 
 <PageTitle>Card Display - Home</PageTitle>
 
@@ -17,13 +20,26 @@
 @code {
     private bool isLoading = false;
     private List<CardData> Cards = [];
+    private string apiKey = string.Empty;
+    private GroqApiClient chatClient = null!;
+    private JsonArray chatHistory = [];
 
     private async Task LoadData()
     {
         isLoading = true;
+        apiKey = configuration["Chat:AI:ApiKey"] ?? throw new InvalidOperationException("Missing configuration: Endpoint. See the README for details");
+        chatClient = new GroqApiClient(apiKey!);
+
+        chatHistory = new JsonArray
+        {
+            new JsonObject
+            {
+                ["role"] = "system",
+                ["content"] = agentPrompt
+            }
+        };
         StateHasChanged();
         
         isLoading = false;
     }
-
 }
