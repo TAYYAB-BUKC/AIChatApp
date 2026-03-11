@@ -70,7 +70,7 @@ IsLoading="@isLoading" />
             new JsonObject
             {
                 ["role"] = "system",
-                ["content"] = "You are an AI assistant that tries to answer the user's query."
+                ["content"] = "You are an AI assistant that will help the users and tries to answer the user's queries when they ask queries."
             }
         };
 
@@ -80,7 +80,7 @@ IsLoading="@isLoading" />
             ["messages"] = chatHistory
         };
 
-        JsonObject? response = await chatClient.CreateChatCompletionAsync(request);
+        JsonObject? response = await chatClient.CreateVisionCompletionAsync(request);
         var message = GroqResponseHelper.GetMessage(Convert.ToString(response));
         responseMessage = message.Content;
         chatHistory.Add(new JsonObject
@@ -155,15 +155,30 @@ IsLoading="@isLoading" />
             chatHistory.Add(new JsonObject
             {
                 ["role"] = Convert.ToString(ChatRole.User),
-                ["content"] = "I will ask questions about this image."
+                ["content"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["type"] = "text",
+                        ["text"] = "I will ask questions about this image.",
+                    },
+                    new JsonObject
+                    {
+                        ["type"] = "image_url",
+                        ["image_url"] = new JsonObject
+                        {
+                            ["url"] = "https://i.ibb.co/zW6nC74x/image.png"
+                        }     
+                    }
+                }
             });
 
             customHistory.Add(new JsonObject
             {
                 ["role"] = Convert.ToString(ChatRole.User),
-                    ["content"] = "I will ask questions about this image.",
-                    ["type"] = "Image",
-                    ["filePath"] = $"temp\\{Path.GetFileName(filePath)}"
+                ["content"] = "I will ask questions about this image.",
+                ["type"] = "Image",
+                ["filePath"] = $"temp\\{Path.GetFileName(filePath)}"
             });
 
             var userResponse = await chatClient.CreateVisionCompletionWithBase64ImageAsync(
