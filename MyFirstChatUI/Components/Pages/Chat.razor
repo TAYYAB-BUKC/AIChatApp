@@ -124,46 +124,46 @@ IsLoading="@isLoading" />
                 ["messages"] = RequestHelper.DeepCloneMessages(chatHistory)
             };
 
-            // JsonObject? userResponse = await chatClient.CreateVisionCompletionAsync(userRequest);
-            // var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
+            JsonObject? userResponse = await chatClient.CreateVisionCompletionAsync(userRequest);
+            var response = GroqResponseHelper.GetMessage(Convert.ToString(userResponse));
             string responseMessage = string.Empty;
 
             #region Streaming
-            await foreach (var chunk in chatClient.CreateChatCompletionStreamAsync(userRequest))
-            {
-                var delta = chunk?["choices"]?[0]?["delta"]?["content"]?.ToString() ?? string.Empty;
-                responseMessage += delta;
-                streamingResponse = responseMessage;
-                StateHasChanged();
-                await Task.Delay(1);
-            }
-
-            customHistory.Add(new JsonObject
-            {
-                ["role"] = ChatRole.Assistant.ToString(),
-                ["content"] = responseMessage,
-                ["type"] = "Text"
-            });
-
-            chatHistory.Add(new JsonObject
-            {
-                ["role"] = ChatRole.Assistant.ToString(),
-                ["content"] = responseMessage,
-            });
-            #endregion
-
-            // chatHistory.Add(new JsonObject
+            // await foreach (var chunk in chatClient.CreateChatCompletionStreamAsync(userRequest))
             // {
-            //     ["role"] = response.Role,
-            //     ["content"] = response.Content,
-            // });
+            //     var delta = chunk?["choices"]?[0]?["delta"]?["content"]?.ToString() ?? string.Empty;
+            //     responseMessage += delta;
+            //     streamingResponse = responseMessage;
+            //     StateHasChanged();
+            //     await Task.Delay(1);
+            // }
 
             // customHistory.Add(new JsonObject
             // {
-            //     ["role"] = response.Role,
-            //     ["content"] = response.Content,
+            //     ["role"] = ChatRole.Assistant.ToString(),
+            //     ["content"] = responseMessage,
             //     ["type"] = "Text"
             // });
+
+            // chatHistory.Add(new JsonObject
+            // {
+            //     ["role"] = ChatRole.Assistant.ToString(),
+            //     ["content"] = responseMessage,
+            // });
+            #endregion
+
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+            });
+
+            customHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+                ["type"] = "Text"
+            });
         }catch(Exception e){
             
         }
