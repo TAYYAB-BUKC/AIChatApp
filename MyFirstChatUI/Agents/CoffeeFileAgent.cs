@@ -14,7 +14,7 @@ namespace MyFirstChatUI.Agents
 		private readonly CoffeeData coffeeDataService;
 		private readonly IConfiguration configuration;
 		private string apiKey = string.Empty;
-		private string systemPrompt = @"
+		public string systemPrompt = @"
 			The document store contains the text of coffee descriptions.
 			Always analyze the document store to provide an answer to the user's question.
 			Never rely on your knowledge not included in the document store.
