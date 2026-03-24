@@ -1,6 +1,8 @@
 ﻿using GroqApiLibrary;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.AI;
+using MyFirstChatUI.Components.Listing;
+using MyFirstChatUI.Helpers.Groq;
 using MyFirstChatUI.Models;
 using System.Text.Json.Nodes;
 
@@ -37,6 +39,24 @@ namespace MyFirstChatUI.Agents
 		{
 			apiKey = configuration["Chat:AI:ApiKey"] ?? throw new InvalidOperationException("Missing configuration: Endpoint. See the README for details");
 			client = new GroqApiClient(apiKey!);
+		}
+
+		public async Task<JsonArray> GetDocumentsAsync()
+		{
+			var documents = new JsonArray();
+			var markdownContents = await coffeeDataService.ReadMarkdownFilesAsDictionaryAsync();
+			foreach (var content in markdownContents)
+			{
+				var document = new JsonObject
+				{
+					["title"] = content.Key,
+					["content"] = content.Value
+				};
+
+				documents.Append(document);
+			}
+
+			return documents;
 		}
 	}
 }
