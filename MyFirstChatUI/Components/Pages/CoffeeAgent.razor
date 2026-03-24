@@ -1,7 +1,9 @@
 ﻿@page "/coffee-agent"
+@using MyFirstChatUI.Agents
 @using MyFirstChatUI.Models
 
 @inject CoffeeData CoffeeDataService
+@inject IConfiguration configuration
 
 <PageTitle>Coffee Data</PageTitle>
 
@@ -14,9 +16,12 @@
 @code {
 #pragma warning disable OPENAI001
 
+    private CoffeeFileAgent agent = null!;
 
     protected override async Task OnInitializedAsync()
     {
+        agent = await CoffeeFileAgent.CreateAsync(CoffeeDataService, configuration);
+        if (agent is null) throw new InvalidOperationException("Unable to create Agent");
     }
 
     public async Task HandleSendMessage(string prompt)
