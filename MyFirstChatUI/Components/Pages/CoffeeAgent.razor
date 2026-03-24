@@ -1,7 +1,11 @@
 ﻿@page "/coffee-agent"
+@using GroqApiLibrary
+@using MyFirstChatUI.Agents
 @using MyFirstChatUI.Models
+@using System.Text.Json.Nodes
 
 @inject CoffeeData CoffeeDataService
+@inject IConfiguration configuration
 
 <PageTitle>Coffee Data</PageTitle>
 
@@ -12,15 +16,30 @@
 <ChatInput OnSendMessage="HandleSendMessage" IsLoading="true" />
 
 @code {
-#pragma warning disable OPENAI001
+    #pragma warning disable OPENAI001
 
+    private CoffeeFileAgent agent = null!;
+    private JsonArray chatHistory = [];
+    private JsonArray customHistory = [];
 
     protected override async Task OnInitializedAsync()
     {
+        agent = await CoffeeFileAgent.CreateAsync(CoffeeDataService, configuration);
+        if (agent is null) throw new InvalidOperationException("Unable to create Agent");
+
+        chatHistory = new JsonArray
+        {
+            new JsonObject
+            {
+                ["role"] = "system",
+                ["content"] = agent.systemPrompt
+            }
+        };
     }
 
     public async Task HandleSendMessage(string prompt)
     {
+        
     }
 
 #pragma warning restore OPENAI001
