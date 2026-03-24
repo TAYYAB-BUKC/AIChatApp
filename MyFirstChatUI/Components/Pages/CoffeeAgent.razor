@@ -75,7 +75,28 @@
 
     public async Task HandleSendMessage(string prompt)
     {
-        
+        isLoading = true;
+        try
+        {
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                ["content"] = prompt
+            });
+
+            var response = await agent.GetResponseAsync(chatHistory);
+
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+            });
+        }
+        catch (Exception e)
+        {
+
+        }
+        isLoading = false;
     }
 
 #pragma warning restore OPENAI001
