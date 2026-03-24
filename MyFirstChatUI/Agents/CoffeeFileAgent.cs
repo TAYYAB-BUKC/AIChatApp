@@ -4,6 +4,7 @@ using Microsoft.Extensions.AI;
 using MyFirstChatUI.Components.Listing;
 using MyFirstChatUI.Helpers.Groq;
 using MyFirstChatUI.Models;
+using MyFirstChatUI.Models.Groq;
 using System.Text.Json.Nodes;
 
 namespace MyFirstChatUI.Agents
@@ -41,7 +42,7 @@ namespace MyFirstChatUI.Agents
 			client = new GroqApiClient(apiKey!);
 		}
 
-		public async Task<JsonArray> GetDocumentsAsync()
+		private async Task<JsonArray> GetDocumentsAsync()
 		{
 			var documents = new JsonArray();
 			var markdownContents = await coffeeDataService.ReadMarkdownFilesAsDictionaryAsync();
@@ -57,6 +58,18 @@ namespace MyFirstChatUI.Agents
 			}
 
 			return documents;
+		}
+
+		public async Task<GroqMessage> GetResponseAsync(JsonArray messages)
+		{
+			JsonObject? response = await client.CreateChatCompletionWithDocumentsAsync(
+				messages,
+				GroqModels.Llama33_70B,
+				await GetDocumentsAsync(),
+				enableCitations: true
+			);
+
+			return GroqResponseHelper.GetMessage(Convert.ToString(response));
 		}
 	}
 }
