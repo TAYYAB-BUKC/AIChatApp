@@ -1,5 +1,6 @@
 ﻿@page "/coffee-agent"
 @using GroqApiLibrary
+@using Microsoft.Extensions.AI
 @using MyFirstChatUI.Agents
 @using MyFirstChatUI.Models
 @using System.Text.Json.Nodes
@@ -10,20 +11,24 @@
 <PageTitle>Coffee Data</PageTitle>
 
 <ChatMessageWrapper>
-    <LoadingIndicator IsLoading="true" StreamingText="" />
+    <LoadingIndicator IsLoading="isLoading" StreamingText="@streamingText" />
 </ChatMessageWrapper>
 
-<ChatInput OnSendMessage="HandleSendMessage" IsLoading="true" />
-
+<ChatInput OnSendMessage="HandleSendMessage" IsLoading="isLoading" />
 @code {
     #pragma warning disable OPENAI001
 
     private CoffeeFileAgent agent = null!;
     private JsonArray chatHistory = [];
     private JsonArray customHistory = [];
+    private bool isLoading;
+    string streamingText = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
+        isLoading = true;
+        streamingText = "Loading Coffee Agent...";
+
         agent = await CoffeeFileAgent.CreateAsync(CoffeeDataService, configuration);
         if (agent is null) throw new InvalidOperationException("Unable to create Agent");
 
@@ -31,10 +36,13 @@
         {
             new JsonObject
             {
-                ["role"] = "system",
+                ["role"] = ChatRole.System.ToString(),
                 ["content"] = agent.systemPrompt
             }
         };
+
+        streamingText = string.Empty;
+        isLoading = false;
     }
 
     public async Task HandleSendMessage(string prompt)
