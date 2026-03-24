@@ -38,7 +38,12 @@
             {
                 ["role"] = ChatRole.System.ToString(),
                 ["content"] = agent.systemPrompt
-            }
+            },
+            new JsonObject
+            {
+                ["role"] = ChatRole.Assistant.ToString(),
+                ["content"] = "Ask me anything about our coffee selection."
+            },
         };
 
         streamingText = string.Empty;
