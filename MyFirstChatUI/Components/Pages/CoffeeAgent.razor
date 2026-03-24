@@ -2,6 +2,7 @@
 @using GroqApiLibrary
 @using Microsoft.Extensions.AI
 @using MyFirstChatUI.Agents
+@using MyFirstChatUI.Helpers.Groq
 @using MyFirstChatUI.Models
 @using System.Text.Json.Nodes
 
@@ -84,7 +85,7 @@
                 ["content"] = prompt
             });
 
-            var response = await agent.GetResponseAsync(chatHistory);
+            var response = await agent.GetResponseAsync(RequestHelper.DeepCloneMessages(chatHistory));
 
             chatHistory.Add(new JsonObject
             {
