@@ -2,6 +2,7 @@
 @using GroqApiLibrary
 @using Microsoft.Extensions.AI
 @using MyFirstChatUI.Agents
+@using MyFirstChatUI.Helpers.Groq
 @using MyFirstChatUI.Models
 @using System.Text.Json.Nodes
 
@@ -75,7 +76,28 @@
 
     public async Task HandleSendMessage(string prompt)
     {
-        
+        isLoading = true;
+        try
+        {
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = Convert.ToString(ChatRole.User),
+                ["content"] = prompt
+            });
+
+            var response = await agent.GetResponseAsync(RequestHelper.DeepCloneMessages(chatHistory));
+
+            chatHistory.Add(new JsonObject
+            {
+                ["role"] = response.Role,
+                ["content"] = response.Content,
+            });
+        }
+        catch (Exception e)
+        {
+
+        }
+        isLoading = false;
     }
 
 #pragma warning restore OPENAI001

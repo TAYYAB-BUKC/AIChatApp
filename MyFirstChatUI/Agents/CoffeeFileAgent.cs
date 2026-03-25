@@ -66,7 +66,7 @@ namespace MyFirstChatUI.Agents
 				messages,
 				GroqModels.Llama33_70B,
 				await GetDocumentsAsync(),
-				enableCitations: true
+				enableCitations: false
 			);
 
 			return GroqResponseHelper.GetMessage(Convert.ToString(response));
