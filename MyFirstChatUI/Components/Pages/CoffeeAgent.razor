@@ -40,7 +40,7 @@
 
 <ChatInput OnSendMessage="HandleSendMessage" IsLoading="isLoading" />
 @code {
-    #pragma warning disable OPENAI001
+#pragma warning disable OPENAI001
 
     private CoffeeFileAgent agent = null!;
     private JsonArray chatHistory = [];
@@ -85,7 +85,7 @@
                 ["content"] = prompt
             });
 
-            var response = await agent.GetResponseAsync(RequestHelper.DeepCloneMessages(chatHistory));
+            var response = await agent.GetCustomResponseAsync(RequestHelper.DeepCloneMessages(chatHistory));
 
             chatHistory.Add(new JsonObject
             {
