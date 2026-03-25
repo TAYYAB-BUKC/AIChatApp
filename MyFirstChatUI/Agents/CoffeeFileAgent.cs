@@ -1,7 +1,5 @@
 ﻿using GroqApiLibrary;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.AI;
-using MyFirstChatUI.Components.Listing;
 using MyFirstChatUI.Helpers.Groq;
 using MyFirstChatUI.Models;
 using MyFirstChatUI.Models.Groq;
@@ -50,11 +48,23 @@ namespace MyFirstChatUI.Agents
 			{
 				var document = new JsonObject
 				{
-					["title"] = content.Key,
-					["content"] = content.Value
+					["id"] = content.Key,
+					["source"] = new JsonObject
+					{
+						["type"] = "text",
+						["text"] = content.Value
+					}
 				};
 
-				documents.Append(document);
+				documents.Add(document);
+
+				//var document = new JsonObject
+				//{
+				//	["title"] = content.Key,
+				//	["content"] = content.Value
+				//};
+
+				//documents.Add(document);
 			}
 
 			return documents;
@@ -67,6 +77,28 @@ namespace MyFirstChatUI.Agents
 				GroqModels.Llama33_70B,
 				await GetDocumentsAsync(),
 				enableCitations: false
+			);
+
+			return GroqResponseHelper.GetMessage(Convert.ToString(response));
+		}
+
+		public async Task<GroqMessage> GetCustomResponseAsync(JsonArray messages)
+		{
+			var documents = await coffeeDataService.ReadMarkdownFilesAsDictionaryAsync();
+			foreach (var document in documents)
+			{
+				messages.Add(new JsonObject
+				{
+					["role"] = ChatRole.System.ToString(),
+					["content"] = $"Document Name: {document.Key}\n\n\nDocument Content: {document.Value}"
+				});
+			}
+
+			JsonObject? response = await client.CreateChatCompletionWithReasoningAsync(
+				messages,
+				GroqModels.GptOss20B,
+				reasoningEffort: GroqApiLibrary.ReasoningEffort.Medium,
+				reasoningFormat: ReasoningFormat.Parsed
 			);
 
 			return GroqResponseHelper.GetMessage(Convert.ToString(response));
